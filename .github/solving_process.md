@@ -225,3 +225,56 @@ public enum Level {
 열거형 Level 클래스 정의.
 
 전체 및 단건 조회 기능 구현.
+
+## 3. 크루 정보 저장 및 반환
+
+```java
+// CrewTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
+public class CrewTest {
+    @Test
+    void 저장_및_반환() {
+        Course course = Course.FRONTEND;
+        String name = "anonymous";
+        Crew crew = new Crew(course, name);
+        assertThat(crew.getCourse()).isEqualTo(course);
+        assertThat(crew.getName()).isEqualTo(name);
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Crew.java
+
+package pairmatching.domain;
+
+public class Crew {
+    private final Course course;
+    private final String name;
+
+    public Crew(Course course, String name) {
+        this.course = course;
+        this.name = name;
+    }
+
+    public Course getCourse() {
+        return course;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+```
+
+Crew 클래스 정의.
+
+과정, 이름 저장 및 반환 기능 구현.
