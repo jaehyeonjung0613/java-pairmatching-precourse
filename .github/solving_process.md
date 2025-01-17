@@ -71,3 +71,80 @@
 |  IllegalArgumentBeanException   | - 아무 기능 없는 Exception |
 | IllegalArgumentServiceException | - 서비스 관련 Exception   |
 |  IllegalArgumentViewException   | - 입력 관련 Exception    |
+
+## 1. 과정 전체 및 단건 조회
+
+```java
+// CourseTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+
+public class CourseTest {
+    private static final String[] names = {"백엔드", "프론트엔드"};
+
+    @Test
+    void 전체_조회() {
+        List<String> nameList = Course.findAll().stream().map(Course::getName).collect(Collectors.toList());
+        assertThat(nameList).containsExactly(names);
+    }
+
+    @Test
+    void 존재_단건_조회() {
+        Optional<Course> optionalCourse = Course.findByName(names[0]);
+        assertThat(optionalCourse.isPresent()).isEqualTo(true);
+    }
+
+    @Test
+    void 미존재_단건_조회() {
+        Optional<Course> optionalCourse = Course.findByName("NOT EXISTS");
+        assertThat(optionalCourse.isPresent()).isEqualTo(false);
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Course.java
+
+package pairmatching.domain;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public enum Course {
+    BACKEND("백엔드"), FRONTEND("프론트엔드");
+
+    private final String name;
+
+    Course(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public static List<Course> findAll() {
+        return Arrays.stream(Course.values()).collect(Collectors.toList());
+    }
+
+    public static Optional<Course> findByName(String name) {
+        return findAll().stream().filter(course -> course.name.equals(name)).findFirst();
+    }
+}
+```
+
+열거형 Course 클래스 정의.
+
+전체 및 단건 조회 기능 구현.
