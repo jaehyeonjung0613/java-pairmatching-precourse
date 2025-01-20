@@ -278,3 +278,59 @@ public class Crew {
 Crew 클래스 정의.
 
 과정, 이름 저장 및 반환 기능 구현.
+
+## 4. 페어 정보 저장 및 반환
+
+```java
+// PairTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
+public class PairTest {
+    @Test
+    void 저장_및_반환() {
+        Level level = Level.LEVEL1;
+        Pair pair = new Pair(level);
+        assertThat(pair.getLevel()).isEqualTo(level);
+        assertThat(pair.getCrewList()).isEmpty();
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Pair.java
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Pair {
+    private final Level level;
+    private final List<Crew> crewList;
+
+    public Pair(Level level) {
+        this.level = level;
+        this.crewList = new ArrayList<>();
+    }
+
+    public Level getLevel() {
+        return level;
+    }
+
+    public List<Crew> getCrewList() {
+        return Collections.unmodifiableList(this.crewList);
+    }
+}
+```
+
+Pair 클래스 정의.
+
+레벨, 크루목록 저장 및 반환 기능 구현.
