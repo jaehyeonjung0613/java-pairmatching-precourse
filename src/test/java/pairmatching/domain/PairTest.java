@@ -12,4 +12,22 @@ public class PairTest {
         assertThat(pair.getLevel()).isEqualTo(level);
         assertThat(pair.getCrewList()).isEmpty();
     }
+
+    @Test
+    void 페어_내_크루_추가() {
+        Pair pair = new Pair(Level.LEVEL1);
+        Crew crew = new Crew(Course.FRONTEND, "test");
+        pair.add(crew);
+        assertThat(pair.getCrewList()).hasSize(1);
+    }
+
+    @Test
+    void 페어_내_크루_삭제() {
+        Pair pair = new Pair(Level.LEVEL1);
+        Crew crew = new Crew(Course.FRONTEND, "test");
+        pair.add(crew);
+        assertThat(pair.getCrewList()).hasSize(1);
+        pair.remove(crew);
+        assertThat(pair.getCrewList()).isEmpty();
+    }
 }

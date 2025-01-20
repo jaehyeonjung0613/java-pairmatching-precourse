@@ -20,4 +20,12 @@ public class Pair {
     public List<Crew> getCrewList() {
         return Collections.unmodifiableList(this.crewList);
     }
+
+    public void add(Crew crew) {
+        this.crewList.add(crew);
+    }
+
+    public void remove(Crew crew) {
+        this.crewList.remove(crew);
+    }
 }
