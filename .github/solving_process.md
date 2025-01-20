@@ -334,3 +334,59 @@ public class Pair {
 Pair 클래스 정의.
 
 레벨, 크루목록 저장 및 반환 기능 구현.
+
+## 5. 페어 내 크루 추가 및 삭제
+
+```java
+// PairTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
+public class PairTest {
+    @Test
+    void 페어_내_크루_추가() {
+        Pair pair = new Pair(Level.LEVEL1);
+        Crew crew = new Crew(Course.FRONTEND, "test");
+        pair.add(crew);
+        assertThat(pair.getCrewList()).hasSize(1);
+    }
+
+    @Test
+    void 페어_내_크루_삭제() {
+        Pair pair = new Pair(Level.LEVEL1);
+        Crew crew = new Crew(Course.FRONTEND, "test");
+        pair.add(crew);
+        assertThat(pair.getCrewList()).hasSize(1);
+        pair.remove(crew);
+        assertThat(pair.getCrewList()).isEmpty();
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Pair.java
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Pair {
+    public void add(Crew crew) {
+        this.crewList.add(crew);
+    }
+
+    public void remove(Crew crew) {
+        this.crewList.remove(crew);
+    }
+}
+```
+
+페어 내 크루 추가 및 삭제 기능 구현.
