@@ -390,3 +390,166 @@ public class Pair {
 ```
 
 페어 내 크루 추가 및 삭제 기능 구현.
+
+## 6. 동일 레벨 동일 페어 유효성 체크
+
+```java
+// PairTest.java
+
+package pairmatching.domain;
+
+public final class PairConstants {
+    private PairConstants() {
+    }
+
+    public static final String EXISTS_SAME_LEVEL_PAIR_MATCHING_MESSAGE = "이미 동일 레벨에서 페어 매칭된 크루가 존재합니다.";
+}
+```
+
+Pair 상수 클래스 정의.
+
+유효성 관련 메시지 정의.
+
+```java
+// PairTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+import static pairmatching.domain.PairConstants.*;
+
+import org.junit.jupiter.api.Test;
+
+public class PairTest {
+    @Test
+    void 다른_레벨_페어_매칭() {
+        Pair pairA = new Pair(Level.LEVEL1), pairB = new Pair(Level.LEVEL2);
+        Crew crewA = new Crew(Course.FRONTEND, "testA"), crewB = new Crew(Course.FRONTEND, "testB");
+        pairA.add(crewA);
+        pairA.add(crewB);
+        pairA.save();
+        pairB.add(crewB);
+        pairB.add(crewA);
+        pairB.save();
+        assertThat(pairB.getCrewList()).hasSize(2);
+    }
+
+    @Test
+    void 같은_레벨_페어_매칭() {
+        Level level = Level.LEVEL1;
+        Pair pairA = new Pair(level), pairB = new Pair(level);
+        Crew crewA = new Crew(Course.FRONTEND, "testA"), crewB = new Crew(Course.FRONTEND, "testB");
+        pairA.add(crewA);
+        pairA.add(crewB);
+        pairA.save();
+        pairB.add(crewB);
+        assertThatThrownBy(() -> pairB.add(crewA)).isInstanceOf(IllegalArgumentException.class)
+            .hasMessage(EXISTS_SAME_LEVEL_PAIR_MATCHING_MESSAGE);
+        assertThat(pairB.getCrewList()).hasSize(1);
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Pair.java
+
+package pairmatching.domain;
+
+import static pairmatching.domain.PairConstants.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Pair {
+    public boolean contains(Crew other) {
+        return this.crewList.contains(other);
+    }
+}
+```
+
+```java
+// Crew.java
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Crew {
+    private final Course course;
+    private final String name;
+    private final List<Pair> pairList;
+
+    public Crew(Course course, String name) {
+        this.course = course;
+        this.name = name;
+        this.pairList = new ArrayList<>();
+    }
+
+    public Course getCourse() {
+        return course;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    protected void add(Pair pair) {
+        this.pairList.add(pair);
+    }
+
+    public boolean existsLevelWithCrew(Level level, Crew other) {
+        return this.pairList.stream().filter(pair -> pair.getLevel().equals(level))
+            .anyMatch(pair -> pair.contains(other));
+    }
+}
+```
+
+페어 이력 등록 기능 구현.
+
+동일 레벨 같은 크루 대상으로 페어 유무 확인 기능 구현.
+
+```java
+// Pair.java
+
+package pairmatching.domain;
+
+import static pairmatching.domain.PairConstants.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Pair {
+    public void add(Crew crew) throws IllegalArgumentException {
+        this.validateMatchingWithCrew(crew);
+        this.crewList.add(crew);
+    }
+
+    private void validateMatchingWithCrew(Crew other) {
+        if (this.crewList.stream()
+            .anyMatch(
+                crew -> crew.existsLevelWithCrew(this.level, other) || other.existsLevelWithCrew(this.level, crew))) {
+            throw new IllegalArgumentException(EXISTS_SAME_LEVEL_PAIR_MATCHING_MESSAGE);
+        }
+    }
+
+    protected void save() {
+        for (Crew crew : this.crewList) {
+            crew.add(this);
+        }
+    }
+}
+```
+
+크루 추가시 매칭 유효성 확인.
+
+크루들의 페어 이력을 기록하는 기능 구현.
+
+
+
+
+
