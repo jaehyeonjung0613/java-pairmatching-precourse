@@ -549,6 +549,94 @@ public class Pair {
 
 크루들의 페어 이력을 기록하는 기능 구현.
 
+## 7. 미션 전체 및 단건 조회
+
+```java
+// MissionTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+
+public class MissionTest {
+    private static final String[] names = {"자동차경주", "로또", "숫자야구게임", "장바구니", "결제", "지하철노선도", "성능개선", "배포"};
+
+    @Test
+    void 전체_조회() {
+        List<String> nameList = Mission.findAll().stream().map(Mission::getName).collect(Collectors.toList());
+        assertThat(nameList).containsExactly(names);
+    }
+
+    @Test
+    void 존재_단건_조회() {
+        Optional<Mission> optionalMission = Mission.findByLevelAndName(Level.LEVEL1, "자동차경주");
+        assertThat(optionalMission.isPresent()).isEqualTo(true);
+    }
+
+    @Test
+    void 미존재_단건_조회() {
+        Optional<Mission> optionalMission = Mission.findByLevelAndName(Level.LEVEL1, "NOT EXISTS");
+        assertThat(optionalMission.isPresent()).isEqualTo(false);
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Mission.java
+
+package pairmatching.domain;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public enum Mission {
+    RACING(Level.LEVEL1, "자동차경주"), LOTTO(Level.LEVEL1, "로또"), BASEBALL(Level.LEVEL1, "숫자야구게임"), CART(Level.LEVEL2,
+        "장바구니"), PAYMENT(Level.LEVEL2, "결제"), SUBWAY(Level.LEVEL2, "지하철노선도"), PERFORMANCE(Level.LEVEL4,
+        "성능개선"), DEPLOYMENT(Level.LEVEL4, "배포");
+
+    private final Level level;
+    private final String name;
+
+    Mission(Level level, String name) {
+        this.level = level;
+        this.name = name;
+    }
+
+    public Level getLevel() {
+        return level;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public static List<Mission> findAll() {
+        return Arrays.stream(Mission.values()).collect(Collectors.toList());
+    }
+
+    public static Optional<Mission> findByLevelAndName(Level level, String name) {
+        Mission[] missions = Mission.values();
+        return Arrays.stream(missions)
+            .filter(mission -> mission.getLevel().equals(level) && mission.getName().equals(name))
+            .findFirst();
+    }
+}
+```
+
+열거형 Mission 클래스 정의.
+
+전체 및 단건 조회 기능 구현.
+
 
 
 
