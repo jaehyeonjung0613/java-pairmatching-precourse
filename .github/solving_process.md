@@ -637,6 +637,161 @@ public enum Mission {
 
 전체 및 단건 조회 기능 구현.
 
+## 8. 미션 페어 매칭
+
+```java
+// Config.java
+
+package pairmatching;
+
+public final class Config {
+    private Config() {
+    }
+
+    public static final int PAIR_PER_MIN_COUNT = 2;
+}
+```
+
+애플리케이션 설정 클래스 정의.
+
+페어 당 최소 인원 정의.
+
+
+```java
+// MissionTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.junit.jupiter.api.Test;
+
+import pairmatching.Config;
+
+public class MissionTest {
+    @Test
+    void 페어_기본_매칭() {
+        Course course = Course.FRONTEND;
+        Mission mission = Mission.RACING;
+        assertThat(mission.exists(course)).isEqualTo(false);
+        mission.match(course, this.createCrewList(course, Config.PAIR_PER_MIN_COUNT * 2));
+        assertThat(mission.exists(course)).isEqualTo(true);
+        assertThat(mission.getPairList()).hasSize(2);
+    }
+
+    @Test
+    void 페어_홀수_포함_매칭() {
+        Course course = Course.FRONTEND;
+        Mission mission = Mission.RACING;
+        assertThat(mission.exists(course)).isEqualTo(false);
+        mission.match(course, this.createCrewList(course, Config.PAIR_PER_MIN_COUNT * 2 + 1));
+        assertThat(mission.exists(course)).isEqualTo(true);
+        assertThat(mission.getPairList()).hasSize(2);
+    }
+
+    private List<Crew> createCrewList(Course course, int count) {
+        return IntStream.range(0, count)
+            .mapToObj(number -> new Crew(course, String.valueOf(number)))
+            .collect(Collectors.toList());
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Mission.java
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import pairmatching.Config;
+
+public enum Mission {
+    RACING(Level.LEVEL1, "자동차경주"), LOTTO(Level.LEVEL1, "로또"), BASEBALL(Level.LEVEL1, "숫자야구게임"), CART(Level.LEVEL2,
+        "장바구니"), PAYMENT(Level.LEVEL2, "결제"), SUBWAY(Level.LEVEL2, "지하철노선도"), PERFORMANCE(Level.LEVEL4,
+        "성능개선"), DEPLOYMENT(Level.LEVEL4, "배포");
+
+    private final Level level;
+    private final String name;
+    private final Map<Course, List<Pair>> pairOfCourse;
+
+    Mission(Level level, String name) {
+        this.level = level;
+        this.name = name;
+        this.pairOfCourse = new HashMap<>();
+    }
+
+    public boolean exists(Course course) {
+        return this.pairOfCourse.get(course) != null;
+    }
+
+    public void match(Course course, List<Crew> shuffledCrewList) {
+        List<Pair> pairList = this.divide(shuffledCrewList);
+        this.pairOfCourse.put(course, pairList);
+        this.generate(course);
+    }
+
+    private List<Pair> divide(List<Crew> shuffledCrewList) {
+        List<Pair> pairList = new ArrayList<>();
+        int length = shuffledCrewList.size();
+        for (int fromIndex = 0, toIndex = Config.PAIR_PER_MIN_COUNT;
+             fromIndex < length; fromIndex = toIndex, toIndex += Config.PAIR_PER_MIN_COUNT) {
+            Pair pair = new Pair(this.level);
+            if (this.isLastPair(fromIndex, length)) {
+                toIndex = length;
+            }
+            for (int index = fromIndex; index < toIndex; index++) {
+                pair.add(shuffledCrewList.get(index));
+            }
+            pairList.add(pair);
+        }
+        return pairList;
+    }
+
+    private boolean isLastPair(int index, int length) {
+        return index + Config.PAIR_PER_MIN_COUNT >= length - 1;
+    }
+
+    private void generate(Course course) {
+        List<Pair> pairList = this.pairOfCourse.get(course);
+        for (Pair pair : pairList) {
+            pair.save();
+        }
+    }
+
+    public Optional<List<Pair>> getPairList(Course course) {
+        if (this.exists(course)) {
+            return Optional.of(Collections.unmodifiableList(this.pairOfCourse.get(course)));
+        }
+        return Optional.empty();
+    }
+}
+```
+
+과정별 페어 목록 관리.
+
+페어 목록이 존재하는지 확인 기능 구현.
+
+매칭을 위해 크루 목록을 페어 단위로 배분하는 기능 구현.
+
+매칭 후 이력 관리를 위한 페어 기록.
+
+과정에 대한 페어 목록 반환 기능 구현.
+
 
 
 
