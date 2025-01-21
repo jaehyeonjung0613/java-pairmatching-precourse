@@ -656,7 +656,6 @@ public final class Config {
 
 페어 당 최소 인원 정의.
 
-
 ```java
 // MissionTest.java
 
@@ -791,6 +790,141 @@ public enum Mission {
 매칭 후 이력 관리를 위한 페어 기록.
 
 과정에 대한 페어 목록 반환 기능 구현.
+
+## 9. 미션 페어 재매칭
+
+```java
+// MissionTest.java
+
+package pairmatching.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.junit.jupiter.api.Test;
+
+import pairmatching.Config;
+
+public class MissionTest {
+    @Test
+    void 페어_재_매칭() {
+        Course course = Course.FRONTEND;
+        Mission mission = Mission.RACING;
+        Crew crew = new Crew(course, "test");
+        List<Crew> crewListA = this.createCrewList(course, Config.PAIR_PER_MIN_COUNT);
+        List<Crew> crewListB = this.createCrewList(course, Config.PAIR_PER_MIN_COUNT);
+        crewListA.add(crew);
+        crewListB.add(crew);
+        mission.match(course, crewListA);
+        mission.match(course, crewListB);
+        assertThat(crew.getPairList()).hasSize(1);
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// Crew.java
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Crew {
+    public List<Pair> getPairList() {
+        return Collections.unmodifiableList(this.pairList);
+    }
+
+    protected void remove(Pair pair) {
+        this.pairList.remove(pair);
+    }
+}
+```
+
+페어 이력 반환 기능 구현.
+
+페어 제거 기능 구현.
+
+```java
+// Pair.java
+
+package pairmatching.domain;
+
+import static pairmatching.domain.PairConstants.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Pair {
+    public void clear() {
+        for(Crew crew : this.crewList) {
+            crew.remove(this);
+        }
+        this.crewList.clear();
+    }
+}
+```
+
+크루 목록 초기화 기능 구현.
+
+```java
+// Mission.java
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import pairmatching.Config;
+
+public enum Mission {
+    RACING(Level.LEVEL1, "자동차경주"), LOTTO(Level.LEVEL1, "로또"), BASEBALL(Level.LEVEL1, "숫자야구게임"), CART(Level.LEVEL2,
+        "장바구니"), PAYMENT(Level.LEVEL2, "결제"), SUBWAY(Level.LEVEL2, "지하철노선도"), PERFORMANCE(Level.LEVEL4,
+        "성능개선"), DEPLOYMENT(Level.LEVEL4, "배포");
+
+    private final Level level;
+    private final String name;
+    private final Map<Course, List<Pair>> pairOfCourse;
+
+    Mission(Level level, String name) {
+        this.level = level;
+        this.name = name;
+        this.pairOfCourse = new HashMap<>();
+    }
+
+    public void match(Course course, List<Crew> shuffledCrewList) {
+        List<Pair> pairList = this.divide(shuffledCrewList);
+        this.remove(course);
+        this.pairOfCourse.put(course, pairList);
+        this.generate(course);
+    }
+
+    private void remove(Course course) {
+        List<Pair> pairList = this.pairOfCourse.remove(course);
+        if(pairList != null) {
+            for(Pair pair : pairList) {
+                pair.clear();
+            }
+        }
+    }
+}
+```
+
+페어 매치시 기존 매칭 이력이 존재하면 삭제.
 
 
 
