@@ -1115,3 +1115,21 @@ public class ConsoleOutputHelper extends OutputHelper {
 
 콘솔 출력 구현.
 
+## 13-1. 화면 기본 인터페이스 정의
+
+```java
+// View.java
+
+package pairmatching.view;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public interface View {
+    void execute(InputHelper inputHelper, OutputHelper outputHelper);
+}
+```
+
+화면 기본 인터페이스 정의
+
+
