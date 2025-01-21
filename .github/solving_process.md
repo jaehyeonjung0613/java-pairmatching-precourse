@@ -1028,6 +1028,7 @@ package pairmatching.ui;
 
 public interface Output {
     void print(String message);
+
     void println(String message);
 }
 ```
@@ -1070,4 +1071,47 @@ public abstract class OutputHelper implements Output {
 출력 추상 클래스 정의.
 
 줄 넘김, 에러 메시지 출력 구현.
+
+## 12. 콘솔 입출력 구현
+
+```java
+// ConsoleInputHelper.java
+
+package pairmatching.ui;
+
+import camp.nextstep.edu.missionutils.Console;
+
+public class ConsoleInputHelper extends InputHelper {
+    @Override
+    public String readline() {
+        return Console.readLine();
+    }
+}
+```
+
+콘솔 입력 구현.
+
+```java
+// ConsoleOutputHelper.java
+
+package pairmatching.ui;
+
+import java.io.PrintStream;
+
+public class ConsoleOutputHelper extends OutputHelper {
+    private final PrintStream console = System.out;
+
+    @Override
+    public void print(String message) {
+        this.console.print(message);
+    }
+
+    @Override
+    public void println(String message) {
+        this.console.println(message);
+    }
+}
+```
+
+콘솔 출력 구현.
 
