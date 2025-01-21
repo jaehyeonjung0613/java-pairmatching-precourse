@@ -59,4 +59,18 @@ public class MissionTest {
             .mapToObj(number -> new Crew(course, String.valueOf(number)))
             .collect(Collectors.toList());
     }
+
+    @Test
+    void 페어_재_매칭() {
+        Course course = Course.FRONTEND;
+        Mission mission = Mission.RACING;
+        Crew crew = new Crew(course, "test");
+        List<Crew> crewListA = this.createCrewList(course, Config.PAIR_PER_MIN_COUNT);
+        List<Crew> crewListB = this.createCrewList(course, Config.PAIR_PER_MIN_COUNT);
+        crewListA.add(crew);
+        crewListB.add(crew);
+        mission.match(course, crewListA);
+        mission.match(course, crewListB);
+        assertThat(crew.getPairList()).hasSize(1);
+    }
 }

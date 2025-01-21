@@ -49,4 +49,11 @@ public class Pair {
             crew.add(this);
         }
     }
+
+    public void clear() {
+        for(Crew crew : this.crewList) {
+            crew.remove(this);
+        }
+        this.crewList.clear();
+    }
 }

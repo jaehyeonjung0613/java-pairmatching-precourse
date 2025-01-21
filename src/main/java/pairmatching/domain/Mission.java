@@ -51,6 +51,7 @@ public enum Mission {
 
     public void match(Course course, List<Crew> shuffledCrewList) {
         List<Pair> pairList = this.divide(shuffledCrewList);
+        this.remove(course);
         this.pairOfCourse.put(course, pairList);
         this.generate(course);
     }
@@ -70,6 +71,15 @@ public enum Mission {
             pairList.add(pair);
         }
         return pairList;
+    }
+
+    private void remove(Course course) {
+        List<Pair> pairList = this.pairOfCourse.remove(course);
+        if(pairList != null) {
+            for(Pair pair : pairList) {
+                pair.clear();
+            }
+        }
     }
 
     private boolean isLastPair(int index, int length) {
