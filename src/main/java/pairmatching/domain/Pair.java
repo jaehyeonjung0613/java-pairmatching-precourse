@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import pairmatching.exception.IllegalArgumentServiceException;
+
 public class Pair {
     private final Level level;
     private final List<Crew> crewList;
@@ -32,7 +34,7 @@ public class Pair {
         if (this.crewList.stream()
             .anyMatch(
                 crew -> crew.existsLevelWithCrew(this.level, other) || other.existsLevelWithCrew(this.level, crew))) {
-            throw new IllegalArgumentException(EXISTS_SAME_LEVEL_PAIR_MATCHING_MESSAGE);
+            throw new IllegalArgumentServiceException(EXISTS_SAME_LEVEL_PAIR_MATCHING_MESSAGE);
         }
     }
 
@@ -51,7 +53,7 @@ public class Pair {
     }
 
     public void clear() {
-        for(Crew crew : this.crewList) {
+        for (Crew crew : this.crewList) {
             crew.remove(this);
         }
         this.crewList.clear();
