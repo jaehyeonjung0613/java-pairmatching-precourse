@@ -865,7 +865,7 @@ import java.util.List;
 
 public class Pair {
     public void clear() {
-        for(Crew crew : this.crewList) {
+        for (Crew crew : this.crewList) {
             crew.remove(this);
         }
         this.crewList.clear();
@@ -915,8 +915,8 @@ public enum Mission {
 
     private void remove(Course course) {
         List<Pair> pairList = this.pairOfCourse.remove(course);
-        if(pairList != null) {
-            for(Pair pair : pairList) {
+        if (pairList != null) {
+            for (Pair pair : pairList) {
                 pair.clear();
             }
         }
@@ -926,7 +926,72 @@ public enum Mission {
 
 페어 매치시 기존 매칭 이력이 존재하면 삭제.
 
+## 10. Exception 정의
 
+```java
+// IllegalArgumentBeanException.java
 
+package pairmatching.exception;
 
+public class IllegalArgumentBeanException extends RuntimeException {
+    public IllegalArgumentBeanException() {
+        super();
+    }
+}
+```
 
+아무 기능 하지 않은 예외(롤백용).
+
+```java
+// IllegalArgumentServiceException.java
+
+package pairmatching.exception;
+
+public class IllegalArgumentServiceException extends IllegalArgumentException {
+    public IllegalArgumentServiceException(String message) {
+        super(message);
+    }
+}
+```
+
+비즈니스단 처리 관련 예외.
+
+```java
+// IllegalArgumentViewException.java
+
+package pairmatching.exception;
+
+public class IllegalArgumentViewException extends IllegalArgumentException {
+    public IllegalArgumentViewException(String message) {
+        super(message);
+    }
+}
+```
+
+화면단 처리 관련 예외.
+
+```java
+// Pair.java
+
+package pairmatching.domain;
+
+import static pairmatching.domain.PairConstants.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import pairmatching.exception.IllegalArgumentServiceException;
+
+public class Pair {
+    private void validateMatchingWithCrew(Crew other) {
+        if (this.crewList.stream()
+            .anyMatch(
+                crew -> crew.existsLevelWithCrew(this.level, other) || other.existsLevelWithCrew(this.level, crew))) {
+            throw new IllegalArgumentServiceException(EXISTS_SAME_LEVEL_PAIR_MATCHING_MESSAGE);
+        }
+    }
+}
+``` 
+
+매칭 예외 변경.
