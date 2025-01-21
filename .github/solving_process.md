@@ -995,3 +995,79 @@ public class Pair {
 ``` 
 
 매칭 예외 변경.
+
+## 11. 입출력 인터페이스 정의
+
+```java
+// Input.java
+
+package pairmatching.ui;
+
+public interface Input {
+    String readline();
+}
+```
+
+입력 인터페이스 정의
+
+```java
+// InputHelper.java
+
+package pairmatching.ui;
+
+public abstract class InputHelper implements Input {
+}
+```
+
+입력 추상 클래스 정의(추후 유용한 기능 필요시 구현).
+
+```java
+// Output.java
+
+package pairmatching.ui;
+
+public interface Output {
+    void print(String message);
+    void println(String message);
+}
+```
+
+출력 인터페이스 정의.
+
+```java
+// OutputHelperConstants.java
+
+package pairmatching.ui;
+
+public final class OutputHelperConstants {
+    private OutputHelperConstants() {
+    }
+
+    public static final String ERROR_OUTPUT_FORMAT = "[ERROR] %s";
+}
+```
+
+출력 추상 상수 클래스 정의.
+
+에러 메시지 형식 정의.
+
+```java
+// OutputHelper.java
+
+package pairmatching.ui;
+
+public abstract class OutputHelper implements Output {
+    public final void printNextLine() {
+        this.println("");
+    }
+
+    public final void printError(String message) {
+        this.println(String.format("%s %s", "[ERROR]", message));
+    }
+}
+```
+
+출력 추상 클래스 정의.
+
+줄 넘김, 에러 메시지 출력 구현.
+
