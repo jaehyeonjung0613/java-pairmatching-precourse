@@ -38,6 +38,10 @@ public enum Mission {
         return Arrays.stream(Mission.values()).collect(Collectors.toList());
     }
 
+    public static List<Mission> findAllByLevel(Level level) {
+        return findAll().stream().filter(mission -> mission.getLevel().equals(level)).collect(Collectors.toList());
+    }
+
     public static Optional<Mission> findByLevelAndName(Level level, String name) {
         Mission[] missions = Mission.values();
         return Arrays.stream(missions)
@@ -75,8 +79,8 @@ public enum Mission {
 
     private void remove(Course course) {
         List<Pair> pairList = this.pairOfCourse.remove(course);
-        if(pairList != null) {
-            for(Pair pair : pairList) {
+        if (pairList != null) {
+            for (Pair pair : pairList) {
                 pair.clear();
             }
         }
