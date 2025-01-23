@@ -1214,7 +1214,8 @@ public class CourseTextView extends TextView {
     @Override
     void show(OutputHelper outputHelper) {
         List<String> nameList = Course.findAll().stream().map(Course::getName).collect(Collectors.toList());
-        outputHelper.println(String.format(COURSE_NAME_LIST_OUTPUT_FORMAT, String.join(COURSE_NAME_SEPARATOR, nameList)));
+        outputHelper.println(
+            String.format(COURSE_NAME_LIST_OUTPUT_FORMAT, String.join(COURSE_NAME_SEPARATOR, nameList)));
     }
 }
 ```
@@ -1275,7 +1276,7 @@ public enum Mission {
         this.name = name;
         this.pairOfCourse = new HashMap<>();
     }
-    
+
     public static List<Mission> findAllByLevel(Level level) {
         return findAll().stream().filter(mission -> mission.getLevel().equals(level)).collect(Collectors.toList());
     }
@@ -1336,3 +1337,84 @@ public class MissionTextView extends TextView {
 ```
 
 미션 출력 화면 구현.
+
+## 13-3. 화면 템플릿 구조 동작 정의 및 구현
+
+```java
+// FrameView.java
+
+package pairmatching.view.layout;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public abstract class FrameView implements View {
+    private final View view;
+
+    public FrameView(View view) {
+        this.view = view;
+    }
+
+    abstract String frame();
+
+    @Override
+    public final void execute(InputHelper inputHelper, OutputHelper outputHelper) {
+        String frame = this.frame();
+        outputHelper.println(frame);
+        this.view.execute(inputHelper, outputHelper);
+        outputHelper.println(frame);
+    }
+}
+```
+
+화면 템플릿 구조 동작 정의.
+
+```java
+// SharpFrameViewTest.java
+
+package pairmatching.view.layout;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public class SharpFrameViewTest {
+    @Test
+    void 샵_템플릿_출력() {
+        String frame = "#############################################";
+        String content = "내용";
+        OutputHelper mockOutputHelper = Mockito.mock(OutputHelper.class);
+        View view = (inputHelper, outputHelper) -> outputHelper.println(content);
+        SharpFrameView sharpFrameView = new SharpFrameView(view);
+        sharpFrameView.execute(null, mockOutputHelper);
+        Mockito.verify(mockOutputHelper, Mockito.times(2)).println(frame);
+        Mockito.verify(mockOutputHelper).println(content);
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// SharpFrameView.java
+
+package pairmatching.view.layout;
+
+import pairmatching.view.View;
+
+public class SharpFrameView extends FrameView {
+    public SharpFrameView(View view) {
+        super(view);
+    }
+
+    @Override
+    String frame() {
+        return "#############################################";
+    }
+}
+```
+
+샵 템플릿 구조 화면 구현.
