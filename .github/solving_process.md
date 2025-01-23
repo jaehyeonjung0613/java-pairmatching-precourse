@@ -1555,3 +1555,20 @@ public final class SerializeView implements View {
 ```
 
 연속 시행 구조 동작 화면 구현
+
+## 13-6. 화면 입력 동작 인터페이스 정의
+
+```java
+// FormView.java
+
+package pairmatching.view.component;
+
+import pairmatching.view.View;
+
+public interface FormView extends View {
+    void onEvent(String command);
+}
+```
+
+화면 입력 동작 인터페이스 정의.
+
