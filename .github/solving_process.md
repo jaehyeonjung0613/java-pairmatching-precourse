@@ -1132,4 +1132,207 @@ public interface View {
 
 화면 기본 인터페이스 정의
 
+## 13-2. 화면 출력 동작 정의 및 구현
 
+```java
+// TextView.java
+
+package pairmatching.view;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public abstract class TextView implements View {
+    abstract void show(OutputHelper outputHelper);
+
+    @Override
+    public final void execute(InputHelper inputHelper, OutputHelper outputHelper) {
+        this.show(outputHelper);
+    }
+}
+```
+
+화면 출력 동작 정의.
+
+```java
+// CourseTextViewTest.java
+
+package pairmatching.view;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import pairmatching.ui.OutputHelper;
+
+public class CourseTextViewTest {
+    @Test
+    void 과정_출력() {
+        OutputHelper outputHelper = Mockito.mock(OutputHelper.class);
+        CourseTextView courseTextView = new CourseTextView();
+        String message = "과정: 백엔드 | 프론트엔드";
+        courseTextView.show(outputHelper);
+        Mockito.verify(outputHelper).println(message);
+    }
+}
+```
+
+과정 출력 테스트 케이스 생성.
+
+```java
+// CourseTextViewConstants.java
+
+package pairmatching.view;
+
+public final class CourseTextViewConstants {
+    private CourseTextViewConstants() {
+    }
+
+    public static final String COURSE_NAME_SEPARATOR = " | ";
+
+    public static final String COURSE_NAME_LIST_OUTPUT_FORMAT = "과정: %s";
+}
+```
+
+CourseTextView 상수 클래스 정의.
+
+과정 출력 관련 상수 정의.
+
+```java
+// CourseTextView.java
+
+package pairmatching.view;
+
+import static pairmatching.view.CourseTextViewConstants.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Course;
+import pairmatching.ui.OutputHelper;
+
+public class CourseTextView extends TextView {
+    @Override
+    void show(OutputHelper outputHelper) {
+        List<String> nameList = Course.findAll().stream().map(Course::getName).collect(Collectors.toList());
+        outputHelper.println(String.format(COURSE_NAME_LIST_OUTPUT_FORMAT, String.join(COURSE_NAME_SEPARATOR, nameList)));
+    }
+}
+```
+
+과정 출력 화면 구현.
+
+```java
+// MissionTextViewTest.java
+
+package pairmatching.view;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import pairmatching.ui.OutputHelper;
+
+public class MissionTextViewTest {
+    @Test
+    void 미션_출력() {
+        OutputHelper outputHelper = Mockito.mock(OutputHelper.class);
+        MissionTextView missionTextView = new MissionTextView();
+        missionTextView.show(outputHelper);
+        Mockito.verify(outputHelper).println("미션:");
+        Mockito.verify(outputHelper).println(" - 레벨1: 자동차경주 | 로또 | 숫자야구게임");
+    }
+}
+```
+
+미션 출력 테스트 케이스 생성.
+
+```java
+// Mission.java
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import pairmatching.Config;
+
+public enum Mission {
+    RACING(Level.LEVEL1, "자동차경주"), LOTTO(Level.LEVEL1, "로또"), BASEBALL(Level.LEVEL1, "숫자야구게임"), CART(Level.LEVEL2,
+        "장바구니"), PAYMENT(Level.LEVEL2, "결제"), SUBWAY(Level.LEVEL2, "지하철노선도"), PERFORMANCE(Level.LEVEL4,
+        "성능개선"), DEPLOYMENT(Level.LEVEL4, "배포");
+
+    private final Level level;
+    private final String name;
+    private final Map<Course, List<Pair>> pairOfCourse;
+
+    Mission(Level level, String name) {
+        this.level = level;
+        this.name = name;
+        this.pairOfCourse = new HashMap<>();
+    }
+    
+    public static List<Mission> findAllByLevel(Level level) {
+        return findAll().stream().filter(mission -> mission.getLevel().equals(level)).collect(Collectors.toList());
+    }
+}
+```
+
+동일 레벨 기준 미션 목록 반환 기능 구현.
+
+```java
+// MissionTextViewConstants.java
+
+package pairmatching.view;
+
+public final class MissionTextViewConstants {
+    private MissionTextViewConstants() {
+    }
+
+    public static final String MISSION_OUTPUT_LOGO = "미션:";
+    public static final String MISSION_NAME_SEPARATOR = " | ";
+
+    public static final String MISSION_NAME_LIST_OUTPUT_FORMAT = " - %s: %s";
+}
+```
+
+MissionTextView 상수 클래스 정의.
+
+미션 출력 관련 상수 정의.
+
+```java
+// MissionTextView.java
+
+package pairmatching.view;
+
+import static pairmatching.view.MissionTextViewConstants.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Level;
+import pairmatching.domain.Mission;
+import pairmatching.ui.OutputHelper;
+
+public class MissionTextView extends TextView {
+    @Override
+    void show(OutputHelper outputHelper) {
+        List<Level> levelList = Level.findAll();
+        outputHelper.println(MISSION_OUTPUT_LOGO);
+        for (Level level : levelList) {
+            List<String> missionNameList = Mission.findAllByLevel(level)
+                .stream()
+                .map(Mission::getName)
+                .collect(Collectors.toList());
+            outputHelper.println(String.format(MISSION_NAME_LIST_OUTPUT_FORMAT, level.getName(),
+                String.join(MISSION_NAME_SEPARATOR, missionNameList)));
+        }
+    }
+}
+```
+
+미션 출력 화면 구현.
