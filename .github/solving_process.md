@@ -1492,3 +1492,66 @@ public final class RepeatView implements View {
 ```
 
 반복 구조 동작 화면 구현(정상 실행시까지 루프 / 단, 서비스 예외는 제외).
+
+## 13-5. 화면 연속 시행 구조 동작 구현
+
+```java
+// SerializeViewTest.java
+
+package pairmatching.view.layout;
+
+import static org.mockito.Mockito.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public class SerializeViewTest {
+    @Test
+    void 연속_시행_구조_동작() {
+        OutputHelper mockOutputHelper = Mockito.mock(OutputHelper.class);
+        AtomicInteger count = new AtomicInteger(0);
+        View view = (inputHelper, outputHelper) -> outputHelper.println(String.valueOf(count.getAndIncrement()));
+        SerializeView serializeView = new SerializeView(view, view, view);
+        serializeView.execute(null, mockOutputHelper);
+        InOrder inOrder = inOrder(mockOutputHelper);
+        for (int i = 0; i < 3; i++) {
+            inOrder.verify(mockOutputHelper).println(String.valueOf(i));
+        }
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// SerializeView.java
+
+package pairmatching.view.layout;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public final class SerializeView implements View {
+    private final View[] views;
+
+    public SerializeView(View... views) {
+        this.views = views;
+    }
+
+    @Override
+    public void execute(InputHelper inputHelper, OutputHelper outputHelper) {
+        for (View view : this.views) {
+            view.execute(inputHelper, outputHelper);
+        }
+    }
+}
+```
+
+연속 시행 구조 동작 화면 구현
