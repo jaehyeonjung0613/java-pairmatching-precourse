@@ -1418,3 +1418,77 @@ public class SharpFrameView extends FrameView {
 ```
 
 샵 템플릿 구조 화면 구현.
+
+## 13-4. 화면 반복 구조 동작 구현
+
+```java
+// RepeatViewTest.java
+
+package pairmatching.view.layout;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import pairmatching.exception.IllegalArgumentViewException;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public class RepeatViewTest {
+    @Test
+    void 반복_구조_동작() {
+        int times = 3;
+        String content = "내용";
+        OutputHelper mockOutputHelper = Mockito.mock(OutputHelper.class);
+        AtomicInteger count = new AtomicInteger(0);
+        View view = (inputHelper, outputHelper) -> {
+            outputHelper.println(content);
+            if(count.getAndIncrement() < times) {
+                throw new IllegalArgumentViewException("");
+            }
+        };
+        RepeatView repeatView = new RepeatView(view);
+        repeatView.execute(null, mockOutputHelper);
+        Mockito.verify(mockOutputHelper, Mockito.times(times));
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// RepeatView.java
+
+package pairmatching.view.layout;
+
+import pairmatching.exception.IllegalArgumentBeanException;
+import pairmatching.exception.IllegalArgumentViewException;
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public final class RepeatView implements View {
+    private final View view;
+
+    public RepeatView(View view) {
+        this.view = view;
+    }
+
+    @Override
+    public void execute(InputHelper inputHelper, OutputHelper outputHelper) {
+        do {
+            try {
+                view.execute(inputHelper, outputHelper);
+                return;
+            } catch (IllegalArgumentViewException e) {
+                outputHelper.printError(e.getMessage());
+                outputHelper.printNextLine();
+            } catch (IllegalArgumentBeanException ignored) {
+            }
+        } while (true);
+    }
+}
+```
+
+반복 구조 동작 화면 구현(정상 실행시까지 루프 / 단, 서비스 예외는 제외).
