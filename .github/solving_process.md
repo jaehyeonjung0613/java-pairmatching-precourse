@@ -1444,7 +1444,7 @@ public class RepeatViewTest {
         AtomicInteger count = new AtomicInteger(0);
         View view = (inputHelper, outputHelper) -> {
             outputHelper.println(content);
-            if(count.getAndIncrement() < times) {
+            if (count.getAndIncrement() < times) {
                 throw new IllegalArgumentViewException("");
             }
         };
@@ -1572,3 +1572,90 @@ public interface FormView extends View {
 
 화면 입력 동작 인터페이스 정의.
 
+## 13-7. 화면 텍스트 입력 동작 정의 및 구현
+
+```java
+// InputFormView.java
+
+package pairmatching.view.component;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public abstract class InputFormView implements FormView {
+    abstract void query(OutputHelper outputHelper);
+
+    @Override
+    public final void execute(InputHelper inputHelper, OutputHelper outputHelper) {
+        this.query(outputHelper);
+        String command = inputHelper.readline();
+        outputHelper.printNextLine();
+        this.onEvent(command);
+    }
+}
+```
+
+화면 텍스트 입력 동작 정의.
+
+```java
+// MissionInputFormViewTest.java
+
+package pairmatching.view.component;
+
+import java.util.function.Consumer;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public class MissionInputFormViewTest {
+    @Test
+    void 텍스트_입력_동작() {
+        String parameter = "test";
+        InputHelper inputHelper = Mockito.mock(InputHelper.class);
+        OutputHelper outputHelper = Mockito.mock(OutputHelper.class);
+        Consumer<String> handler = Mockito.mock(Consumer.class);
+        MissionInputFormView missionInputFormView = new MissionInputFormView(handler);
+        Mockito.when(inputHelper.readline()).thenReturn(parameter);
+        missionInputFormView.execute(inputHelper, outputHelper);
+        Mockito.verify(outputHelper).println("과정, 레벨, 미션을 선택하세요.");
+        Mockito.verify(outputHelper).println("ex) 백엔드, 레벨1, 자동차경주");
+        Mockito.verify(handler, Mockito.atMostOnce()).accept(parameter);
+    }
+}
+```
+
+미션 텍스트 입력 동작 테스트 케이스 생성.
+
+```java
+// MissionInputFormView.java
+
+package pairmatching.view.component;
+
+import java.util.function.Consumer;
+
+import pairmatching.ui.OutputHelper;
+
+public class MissionInputFormView extends InputFormView {
+    private final Consumer<String> handler;
+
+    public MissionInputFormView(Consumer<String> handler) {
+        this.handler = handler;
+    }
+
+    @Override
+    void query(OutputHelper outputHelper) {
+        outputHelper.println("과정, 레벨, 미션을 선택하세요.");
+        outputHelper.println("ex) 백엔드, 레벨1, 자동차경주");
+    }
+
+    @Override
+    public void onEvent(String command) {
+        this.handler.accept(command);
+    }
+}
+```
+
+미션 텍스트 입력 동작 화면 구현.
