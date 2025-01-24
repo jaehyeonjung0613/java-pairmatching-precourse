@@ -1659,3 +1659,358 @@ public class MissionInputFormView extends InputFormView {
 ```
 
 미션 텍스트 입력 동작 화면 구현.
+
+## 13-8. 화면 선택 입력 동작 정의 및 구현
+
+```java
+// SelectItem.java
+
+package pairmatching.view.component;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public interface SelectItem {
+    String getCommand();
+
+    String getName();
+
+    static List<SelectItem> findAll(Class<? extends SelectItem> selectItemClass) {
+        return Arrays.stream(selectItemClass.getEnumConstants()).collect(Collectors.toList());
+    }
+
+    static Optional<SelectItem> findByCommand(Class<? extends SelectItem> selectItemClass, String command) {
+        List<SelectItem> selectItemList = findAll(selectItemClass);
+        for (SelectItem selectItem : selectItemList) {
+            if (selectItem.getCommand().equals(command)) {
+                return Optional.of(selectItem);
+            }
+        }
+        return Optional.empty();
+    }
+}
+```
+
+선택 항목 인터페이스 정의.
+
+전체 및 단건 조회 구현.
+
+```java
+// SelectHandler.java
+
+package pairmatching.view.component;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+public final class SelectHandler {
+    private final Map<SelectItem, Runnable> handlerMap = new HashMap<>();
+
+    private SelectHandler() {
+    }
+
+    public static SelectHandler builder() {
+        return new SelectHandler();
+    }
+
+    public SelectHandler addEventListener(SelectItem selectItem, Runnable handler) {
+        this.handlerMap.put(selectItem, handler);
+        return this;
+    }
+
+    public Optional<Runnable> select(SelectItem selectItem) {
+        return Optional.ofNullable(this.handlerMap.get(selectItem));
+    }
+}
+```
+
+선택 이벤트 처리기 구현.
+
+```java
+// SelectFormViewConstants.java
+
+package pairmatching.view.component;
+
+public final class SelectFormViewConstants {
+    private SelectFormViewConstants() {
+    }
+
+    public static final String NOT_EXISTS_COMMAND_MESSAGE = "존재하지 않은 기능입니다.";
+    public static final String NOT_PROCESS_EVENT_MESSAGE = "기능에 맞는 처리할 수 없습니다.";
+}
+```
+
+SelectFormView 상수 클래스 정의.
+
+선택 예외 관련 메시지 정의.
+
+```java
+// SelectFormView.java
+
+package pairmatching.view.component;
+
+import static pairmatching.view.component.SelectFormViewConstants.*;
+
+import java.util.List;
+
+import pairmatching.exception.IllegalArgumentServiceException;
+import pairmatching.exception.IllegalArgumentViewException;
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public abstract class SelectFormView implements FormView {
+    private final SelectHandler selectHandler;
+
+    public SelectFormView(SelectHandler selectHandler) {
+        this.selectHandler = selectHandler;
+    }
+
+    abstract Class<? extends SelectItem> getItemClass();
+
+    abstract void show(OutputHelper outputHelper, List<SelectItem> selectItemList);
+
+    @Override
+    public final void onEvent(String command) {
+        SelectItem selectItem = SelectItem.findByCommand(this.getItemClass(), command)
+            .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_COMMAND_MESSAGE));
+        Runnable handler = this.selectHandler.select(selectItem)
+            .orElseThrow(() -> new IllegalArgumentServiceException(NOT_PROCESS_EVENT_MESSAGE));
+        handler.run();
+    }
+
+    @Override
+    public final void execute(InputHelper inputHelper, OutputHelper outputHelper) {
+        List<SelectItem> selectItemList = SelectItem.findAll(this.getItemClass());
+        this.show(outputHelper, selectItemList);
+        String command = inputHelper.readline();
+        outputHelper.printNextLine();
+        this.onEvent(command);
+    }
+}
+```
+
+화면 선택 입력 동작 정의.
+
+```java
+// MenuSelectItem.java
+
+package pairmatching.view.component;
+
+public enum MenuSelectItem implements SelectItem {
+    PAIR_MATCHING("1", "페어 매칭"),
+    PAIR_SELECTION("2", "페어 조회"),
+    PAIR_RESET("3", "페어 초기화"),
+    END("Q", "종료");
+
+    private final String command;
+    private final String name;
+
+    MenuSelectItem(String command, String name) {
+        this.command = command;
+        this.name = name;
+    }
+
+    @Override
+    public String getCommand() {
+        return this.command;
+    }
+
+    @Override
+    public String getName() {
+        return this.name;
+    }
+}
+```
+
+메뉴에 출력될 항목 정의.
+
+```java
+// MenuSelectFormViewTest.java
+
+package pairmatching.view.component;
+
+import static org.assertj.core.api.Assertions.*;
+import static pairmatching.view.component.SelectFormViewConstants.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public class MenuSelectFormViewTest {
+    @Test
+    void 올바른_선택_입력_동작() {
+        InputHelper inputHelper = Mockito.mock(InputHelper.class);
+        OutputHelper outputHelper = Mockito.mock(OutputHelper.class);
+        AtomicInteger selected = new AtomicInteger(0);
+        MenuSelectFormView menuSelectFormView = new MenuSelectFormView(
+            SelectHandler.builder().addEventListener(MenuSelectItem.PAIR_MATCHING, selected::getAndIncrement));
+        Mockito.when(inputHelper.readline()).thenReturn("1");
+        menuSelectFormView.execute(inputHelper, outputHelper);
+        assertThat(selected.get()).isEqualTo(1);
+        Mockito.verify(outputHelper).println("기능을 선택하세요.");
+        Mockito.verify(outputHelper).println("1. 페어 매칭");
+    }
+
+    @Test
+    void 올바른_않은_선택_입력_동작() {
+        InputHelper inputHelper = Mockito.mock(InputHelper.class);
+        OutputHelper outputHelper = Mockito.mock(OutputHelper.class);
+        MenuSelectFormView menuSelectFormView = new MenuSelectFormView(
+            SelectHandler.builder().addEventListener(MenuSelectItem.PAIR_MATCHING, () -> {
+            }));
+        Mockito.when(inputHelper.readline()).thenReturn("NOT VALID COMMAND");
+        assertThatThrownBy(() -> menuSelectFormView.execute(inputHelper, outputHelper))
+            .isInstanceOf(IllegalArgumentException.class).hasMessage(NOT_EXISTS_COMMAND_MESSAGE);
+    }
+}
+```
+
+메뉴 선택 입력 동작 테스트 케이스 생성.
+
+```java
+// MenuSelectFormView.java
+
+package pairmatching.view.component;
+
+import java.util.List;
+
+import pairmatching.ui.OutputHelper;
+
+public class MenuSelectFormView extends SelectFormView {
+
+    public MenuSelectFormView(SelectHandler selectHandler) {
+        super(selectHandler);
+    }
+
+    @Override
+    Class<? extends SelectItem> getItemClass() {
+        return MenuSelectItem.class;
+    }
+
+    @Override
+    void show(OutputHelper outputHelper, List<SelectItem> selectItemList) {
+        outputHelper.println("기능을 선택하세요.");
+        for (SelectItem selectItem : selectItemList) {
+            outputHelper.println(String.format("%s. %s", selectItem.getCommand(), selectItem.getName()));
+        }
+    }
+}
+```
+
+메뉴 선택 입력 동작 화면 구현.
+
+```java
+// ReMatchingSelectItem.java
+
+package pairmatching.view.component;
+
+public enum ReMatchingSelectItem implements SelectItem{
+    YES("네", "네"),
+    NO("아니오", "아니오");
+
+    private final String command;
+    private final String name;
+
+    ReMatchingSelectItem(String command, String name) {
+        this.command = command;
+        this.name = name;
+    }
+
+    @Override
+    public String getCommand() {
+        return this.command;
+    }
+
+    @Override
+    public String getName() {
+        return this.name;
+    }
+}
+```
+
+리매칭에 출력될 항목 정의.
+
+```java
+// ReMatchingSelectFormViewTest.java
+
+package pairmatching.view.component;
+
+import static org.assertj.core.api.Assertions.*;
+import static pairmatching.view.component.SelectFormViewConstants.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public class ReMatchingSelectFormViewTest {
+    @Test
+    void 올바른_선택_입력_동작() {
+        InputHelper inputHelper = Mockito.mock(InputHelper.class);
+        OutputHelper outputHelper = Mockito.mock(OutputHelper.class);
+        AtomicInteger selected = new AtomicInteger(0);
+        ReMatchingSelectFormView reMatchingSelectFormView = new ReMatchingSelectFormView(
+            SelectHandler.builder().addEventListener(ReMatchingSelectItem.YES, selected::getAndIncrement));
+        Mockito.when(inputHelper.readline()).thenReturn("네");
+        reMatchingSelectFormView.execute(inputHelper, outputHelper);
+        assertThat(selected.get()).isEqualTo(1);
+        Mockito.verify(outputHelper).println("매칭 정보가 있습니다. 다시 매칭하시겠습니까?");
+        Mockito.verify(outputHelper).println("네 | 아니오");
+    }
+
+    @Test
+    void 올바른_않은_선택_입력_동작() {
+        InputHelper inputHelper = Mockito.mock(InputHelper.class);
+        OutputHelper outputHelper = Mockito.mock(OutputHelper.class);
+        ReMatchingSelectFormView reMatchingSelectFormView = new ReMatchingSelectFormView(
+            SelectHandler.builder().addEventListener(MenuSelectItem.PAIR_MATCHING, () -> {
+            }));
+        Mockito.when(inputHelper.readline()).thenReturn("NOT VALID COMMAND");
+        assertThatThrownBy(() -> reMatchingSelectFormView.execute(inputHelper, outputHelper))
+            .isInstanceOf(IllegalArgumentException.class).hasMessage(NOT_EXISTS_COMMAND_MESSAGE);
+    }
+}
+```
+
+리매칭 선택 입력 동작 테스트 케이스 생성.
+
+```java
+// RematchingSelectFormView.java
+
+package pairmatching.view.component;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import pairmatching.ui.OutputHelper;
+
+public class ReMatchingSelectFormView extends SelectFormView {
+    public ReMatchingSelectFormView(SelectHandler selectHandler) {
+        super(selectHandler);
+    }
+
+    @Override
+    Class<? extends SelectItem> getItemClass() {
+        return ReMatchingSelectItem.class;
+    }
+
+    @Override
+    void show(OutputHelper outputHelper, List<SelectItem> selectItemList) {
+        List<String> nameList = selectItemList.stream().map(SelectItem::getName).collect(Collectors.toList());
+        outputHelper.println("매칭 정보가 있습니다. 다시 매칭하시겠습니까?");
+        outputHelper.println(String.join(" | ", nameList));
+    }
+}
+```
+
+리매칭 선택 입력 화면 구현.
