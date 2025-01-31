@@ -2014,3 +2014,96 @@ public class ReMatchingSelectFormView extends SelectFormView {
 ```
 
 리매칭 선택 입력 화면 구현.
+
+## 14. 애플리케이션 Skeleton
+
+```java
+// Game.java
+
+package pairmatching.infrastructure;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public class Game {
+    private static Game instance;
+
+    private final InputHelper inputHelper;
+    private final OutputHelper outputHelper;
+
+    private Game(InputHelper inputHelper, OutputHelper outputHelper) {
+        this.inputHelper = inputHelper;
+        this.outputHelper = outputHelper;
+    }
+
+    protected static Game getInstance(InputHelper inputHelper, OutputHelper outputHelper) {
+        if (instance == null) {
+            instance = new Game(inputHelper, outputHelper);
+        }
+        return instance;
+    }
+
+    public void run() {
+    }
+
+    public void finish() {
+        instance = null;
+    }
+}
+```
+
+애플리케이션 런처 동작 및 종료 구성.
+
+```java
+// GameManager.java
+
+package pairmatching.infrastructure;
+
+import pairmatching.ui.ConsoleInputHelper;
+import pairmatching.ui.ConsoleOutputHelper;
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+
+public class GameManager {
+    private InputHelper inputHelper = new ConsoleInputHelper();
+    private OutputHelper outputHelper = new ConsoleOutputHelper();
+
+    public GameManager inputHelper(InputHelper inputHelper) {
+        this.inputHelper = inputHelper;
+        return this;
+    }
+
+    public GameManager outputHelper(OutputHelper outputHelper) {
+        this.outputHelper = outputHelper;
+        return this;
+    }
+
+    public Game build() {
+        return Game.getInstance(this.inputHelper, this.outputHelper);
+    }
+}
+```
+
+런처 builder 생성.
+
+```java
+// Application.java
+
+package pairmatching;
+
+import pairmatching.infrastructure.Game;
+import pairmatching.infrastructure.GameManager;
+
+public class Application {
+    public static void main(String[] args) {
+        Game game = new GameManager().build();
+        try {
+            game.run();
+        } finally {
+            game.finish();
+        }
+    }
+}
+```
+
+애플리케이션 실행 및 종료.
