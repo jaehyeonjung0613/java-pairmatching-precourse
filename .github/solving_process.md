@@ -2566,3 +2566,44 @@ public class MissionService implements Service {
 
 매칭 조회시 이력이 존재하지 않은지 유효성 확인.
 
+## 18. 크루 목록 저장
+
+```java
+// Repository.java
+
+package pairmatching.controller.repository;
+
+import java.util.List;
+
+public interface Repository<T> {
+    List<T> findAll();
+}
+```
+
+Repository 인터페이스 정의.
+
+```java
+// CrewRepository.java
+
+package pairmatching.controller.repository;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import pairmatching.domain.Crew;
+
+public class CrewRepository implements Repository<Crew> {
+    private static final List<Crew> crews = new ArrayList<>();
+
+    @Override
+    public List<Crew> findAll() {
+        return Collections.unmodifiableList(crews);
+    }
+}
+
+```
+
+Crew Repository 정의.
+
+전체 조회 기능 구현.
