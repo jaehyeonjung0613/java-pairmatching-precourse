@@ -2741,3 +2741,218 @@ public class Game {
 ```
 
 애플리케이션 실행시 크루 목록 초기화 시행.
+
+## 20. 페어 매칭
+
+```java
+// CrewRepository.java
+
+package pairmatching.repository;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+
+public class CrewRepository implements Repository<Crew> {
+    public List<Crew> findAllByCourse(Course course) {
+        return crews.stream().filter(crew -> crew.getCourse().equals(course)).collect(Collectors.toList());
+    }
+}
+```
+
+해당 과정에 소속된 크루 목록 조회 기능 구현.
+
+```java
+// MissionService.java
+
+package pairmatching.service;
+
+import static pairmatching.service.MissionServiceConstants.*;
+
+import java.util.List;
+
+import camp.nextstep.edu.missionutils.Randoms;
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentServiceException;
+import pairmatching.repository.CrewRepository;
+
+public class MissionService implements Service {
+    private final CrewRepository crewRepository = new CrewRepository();
+
+    public void match(Course course, Mission mission) {
+        List<Crew> crewList = this.crewRepository.findAllByCourse(course);
+        List<Crew> shuffledCrewList = this.shuffleCrewList(crewList);
+        mission.match(course, shuffledCrewList);
+    }
+
+    private List<Crew> shuffleCrewList(List<Crew> crewList) {
+        return Randoms.shuffle(crewList);
+    }
+}
+```
+
+페어 매칭 기능 구현.
+
+```java
+// MissionController.java
+
+package pairmatching.controller;
+
+import static pairmatching.controller.MissionControllerConstants.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+import pairmatching.domain.Level;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentViewException;
+import pairmatching.service.MissionService;
+
+public class MissionController implements Controller {
+    public boolean checkPairMatched(String input) {
+        Command command = new Command(input);
+        Course course = this.getOneByCourse(command.getCourseName());
+        Level level = this.getOneByLevel(command.getLevelName());
+        Mission mission = this.getOneByMission(level, command.getMissionName());
+        return mission.exists(course);
+    }
+
+    public void match(String input) {
+        Command command = new Command(input);
+        Course course = this.getOneByCourse(command.getCourseName());
+        Level level = this.getOneByLevel(command.getLevelName());
+        Mission mission = this.getOneByMission(level, command.getMissionName());
+        this.missionService.match(course, mission);
+    }
+}
+```
+
+페어 매칭 존재 확인 기능 구현.
+
+페어 매칭 기능 정의.
+
+```java
+// PairMatchingViewController.java
+
+package pairmatching.controller.view;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import pairmatching.controller.MissionController;
+import pairmatching.exception.IllegalArgumentBeanException;
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.CourseTextView;
+import pairmatching.view.MissionTextView;
+import pairmatching.view.View;
+import pairmatching.view.component.MissionInputFormView;
+import pairmatching.view.component.ReMatchingSelectFormView;
+import pairmatching.view.component.ReMatchingSelectItem;
+import pairmatching.view.component.SelectHandler;
+import pairmatching.view.layout.RepeatView;
+import pairmatching.view.layout.SerializeView;import pairmatching.view.layout.SharpFrameView;
+
+public class PairMatchingViewController implements ViewController {
+    private final InputHelper inputHelper;
+    private final OutputHelper outputHelper;
+    // View Controller
+    private final PairSelectionViewController pairSelectionViewController;
+    // Controller
+    private final MissionController missionController = new MissionController();
+
+    public PairMatchingViewController(InputHelper inputHelper, OutputHelper outputHelper) {
+        this.inputHelper = inputHelper;
+        this.outputHelper = outputHelper;
+        // View Controller
+        this.pairSelectionViewController = new PairSelectionViewController(outputHelper);
+    }
+
+    @Override
+    public View make() {
+        return new SerializeView(
+            new SharpFrameView(new SerializeView(new CourseTextView(), new MissionTextView())),
+            new RepeatView(new MissionInputFormView(this::match)));
+    }
+
+    public void match(String command) {
+        if (this.missionController.checkPairMatched(command) && !this.queryReMatching()) {
+            throw new IllegalArgumentBeanException();
+        }
+        this.missionController.match(command);
+        this.pairSelectionViewController.select(command);
+    }
+
+    private boolean queryReMatching() {
+        AtomicBoolean result = new AtomicBoolean(false);
+        View view = new RepeatView(new ReMatchingSelectFormView(SelectHandler.builder()
+            .addEventListener(ReMatchingSelectItem.YES, () -> result.set(true))
+            .addEventListener(ReMatchingSelectItem.NO, () -> result.set(false))));
+        view.execute(this.inputHelper, this.outputHelper);
+        return result.get();
+    }
+}
+```
+
+페어 매칭 화면 동작 정의 및 처리.
+
+```java
+// MenuViewController.java
+
+package pairmatching.controller.view;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+import pairmatching.view.component.MenuSelectFormView;
+import pairmatching.view.component.MenuSelectItem;
+import pairmatching.view.component.SelectHandler;
+
+public class MenuViewController implements ViewController {
+    private final InputHelper inputHelper;
+    private final OutputHelper outputHelper;
+    private final Runnable endHandler;
+    // ViewController
+    private final PairMatchingViewController pairMatchingViewController;
+    private final PairSelectionViewController pairSelectionViewController;
+
+    public MenuViewController(InputHelper inputHelper, OutputHelper outputHelper, Runnable endHandler) {
+        this.inputHelper = inputHelper;
+        this.outputHelper = outputHelper;
+        this.endHandler = endHandler;
+        // ViewController
+        this.pairMatchingViewController = new PairMatchingViewController(inputHelper, outputHelper);
+        this.pairSelectionViewController = new PairSelectionViewController(outputHelper);
+    }
+
+    @Override
+    public View make() {
+        return new MenuSelectFormView(SelectHandler.builder()
+            .addEventListener(MenuSelectItem.PAIR_MATCHING, this::openPairMatching)
+            .addEventListener(MenuSelectItem.PAIR_SELECTION, this::openPairSelection)
+            .addEventListener(MenuSelectItem.END, this.endHandler));
+    }
+
+    public void openPairMatching() {
+        View pairMatchingView = pairMatchingViewController.make();
+        pairMatchingView.execute(this.inputHelper, this.outputHelper);
+    }
+}
+```
+
+페어 매칭 이벤트 핸들러 등록.
