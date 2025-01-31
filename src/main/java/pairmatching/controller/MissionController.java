@@ -1,5 +1,7 @@
 package pairmatching.controller;
 
+import static pairmatching.controller.MissionControllerConstants.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,19 +11,17 @@ import pairmatching.domain.Crew;
 import pairmatching.domain.Level;
 import pairmatching.domain.Mission;
 import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentViewException;
 import pairmatching.service.MissionService;
 
 public class MissionController implements Controller {
     private final MissionService missionService = new MissionService();
 
     public List<List<String>> select(String input) {
-        String[] commands = input.split(", ");
-        String courseName = commands[0];
-        String levelName = commands[1];
-        String missionName = commands[2];
-        Course course = this.getOneByCourse(courseName);
-        Level level = this.getOneByLevel(levelName);
-        Mission mission = this.getOneByMission(level, missionName);
+        Command command = new Command(input);
+        Course course = this.getOneByCourse(command.getCourseName());
+        Level level = this.getOneByLevel(command.getLevelName());
+        Mission mission = this.getOneByMission(level, command.getMissionName());
         List<Pair> pairList = this.missionService.select(course, mission);
         List<List<String>> pairOfNameList = new ArrayList<>();
         for (Pair pair : pairList) {
@@ -32,14 +32,49 @@ public class MissionController implements Controller {
     }
 
     private Course getOneByCourse(String courseName) {
-        return Course.findByName(courseName).get();
+        return Course.findByName(courseName)
+            .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_COURSE_INPUT_MESSAGE));
     }
 
     private Level getOneByLevel(String levelName) {
-        return Level.findByName(levelName).get();
+        return Level.findByName(levelName)
+            .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_LEVEL_INPUT_MESSAGE));
     }
 
     private Mission getOneByMission(Level level, String missionName) {
-        return Mission.findByLevelAndName(level, missionName).get();
+        return Mission.findByLevelAndName(level, missionName)
+            .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_MISSION_INPUT_MESSAGE));
+    }
+
+    private static class Command {
+        private final String courseName;
+        private final String levelName;
+        private final String missionName;
+
+        public Command(String command) {
+            this.validateCommand(command);
+            String[] commands = command.split(MISSION_INPUT_SEPARATOR);
+            this.courseName = commands[0];
+            this.levelName = commands[1];
+            this.missionName = commands[2];
+        }
+
+        private void validateCommand(String command) {
+            if (command.split(MISSION_INPUT_SEPARATOR).length < 3) {
+                throw new IllegalArgumentViewException(NOT_VALID_MISSION_INPUT_MESSAGE);
+            }
+        }
+
+        public String getCourseName() {
+            return courseName;
+        }
+
+        public String getLevelName() {
+            return levelName;
+        }
+
+        public String getMissionName() {
+            return missionName;
+        }
     }
 }
