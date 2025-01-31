@@ -2410,3 +2410,159 @@ public class MenuViewController implements ViewController {
 ```
 
 페어 조회 이벤트 핸들러 등록.
+
+## 17. 페어 조회 유효성 체크
+
+```java
+// MissionControllerConstants.java
+
+package pairmatching.controller;
+
+public final class MissionControllerConstants {
+    private MissionControllerConstants() {
+    }
+
+    public static final String MISSION_INPUT_SEPARATOR = ", ";
+
+    public static final String NOT_VALID_MISSION_INPUT_MESSAGE = "올바르지 않은 입력 형식입니다.";
+    public static final String NOT_EXISTS_COURSE_INPUT_MESSAGE = "입력에 해당되는 과정이 존재하지 않습니다.";
+    public static final String NOT_EXISTS_LEVEL_INPUT_MESSAGE = "입력에 해당되는 레벨이 존재하지 않습니다.";
+    public static final String NOT_EXISTS_MISSION_INPUT_MESSAGE = "입력에 해당되는 미션이 존재하지 않습니다.";
+}
+```
+
+입력 구분자 정의.
+
+MissionController 유효성 관련 상수 정의.
+
+```java
+// MissionController.java
+
+package pairmatching.controller;
+
+import static pairmatching.controller.MissionControllerConstants.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+import pairmatching.domain.Level;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentViewException;
+import pairmatching.service.MissionService;
+
+public class MissionController implements Controller {
+    private final MissionService missionService = new MissionService();
+
+    public List<List<String>> select(String input) {
+        Command command = new Command(input);
+        Course course = this.getOneByCourse(command.getCourseName());
+        Level level = this.getOneByLevel(command.getLevelName());
+        Mission mission = this.getOneByMission(level, command.getMissionName());
+        List<Pair> pairList = this.missionService.select(course, mission);
+        List<List<String>> pairOfNameList = new ArrayList<>();
+        for (Pair pair : pairList) {
+            List<String> nameList = pair.getCrewList().stream().map(Crew::getName).collect(Collectors.toList());
+            pairOfNameList.add(nameList);
+        }
+        return pairOfNameList;
+    }
+
+    private Course getOneByCourse(String courseName) {
+        return Course.findByName(courseName)
+            .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_COURSE_INPUT_MESSAGE));
+    }
+
+    private Level getOneByLevel(String levelName) {
+        return Level.findByName(levelName)
+            .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_LEVEL_INPUT_MESSAGE));
+    }
+
+    private Mission getOneByMission(Level level, String missionName) {
+        return Mission.findByLevelAndName(level, missionName)
+            .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_MISSION_INPUT_MESSAGE));
+    }
+
+    private static class Command {
+        private final String courseName;
+        private final String levelName;
+        private final String missionName;
+
+        public Command(String command) {
+            this.validateCommand(command);
+            String[] commands = command.split(MISSION_INPUT_SEPARATOR);
+            this.courseName = commands[0];
+            this.levelName = commands[1];
+            this.missionName = commands[2];
+        }
+
+        private void validateCommand(String command) {
+            if (command.split(MISSION_INPUT_SEPARATOR).length < 3) {
+                throw new IllegalArgumentViewException(NOT_VALID_MISSION_INPUT_MESSAGE);
+            }
+        }
+
+        public String getCourseName() {
+            return courseName;
+        }
+
+        public String getLevelName() {
+            return levelName;
+        }
+
+        public String getMissionName() {
+            return missionName;
+        }
+    }
+}
+```
+
+입력 정보에 대한 DAO 클래스 별도 정의.
+
+입력 정보 받아올때 올바른 형식인지 확인.
+
+Service 전달 전 과정/레벨/미션 존재 유효성 확인.
+
+```java
+// MissionServiceConstants.java
+
+package pairmatching.service;
+
+public final class MissionServiceConstants {
+    private MissionServiceConstants() {
+    }
+
+    public static final String NOT_EXISTS_MATCHING_HISTORY_MESSAGE = "매칭 이력이 없습니다.";
+}
+```
+
+MissionService 유효성 관련 상수 정의.
+
+```java
+// MissionService.java
+
+package pairmatching.service;
+
+import static pairmatching.service.MissionServiceConstants.*;
+
+import java.util.List;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentServiceException;
+
+public class MissionService implements Service {
+
+    public List<Pair> select(Course course, Mission mission) {
+        return mission.getPairList(course)
+            .orElseThrow(() -> new IllegalArgumentServiceException(NOT_EXISTS_MATCHING_HISTORY_MESSAGE));
+    }
+}
+```
+
+매칭 조회시 이력이 존재하지 않은지 유효성 확인.
+
