@@ -2607,3 +2607,137 @@ public class CrewRepository implements Repository<Crew> {
 Crew Repository 정의.
 
 전체 조회 기능 구현.
+
+## 19. 크루 목록 초기화
+
+```java
+// CrewRepositoryTest.java
+
+package pairmatching.repository;
+
+import static org.assertj.core.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
+public class CrewRepositoryTest {
+    @Test
+    void 크루_목록_초기화() {
+        CrewRepository crewRepository = new CrewRepository();
+        assertThat(crewRepository.findAll()).isEmpty();
+        CrewRepository.init();
+        assertThat(crewRepository.findAll()).hasSize(35);
+    }
+}
+```
+
+테스트 케이스 생성.
+
+```java
+// CrewRepository.java
+
+package pairmatching.repository;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+
+public class CrewRepository implements Repository<Crew> {
+    private static final List<Crew> crews = new ArrayList<>();
+
+    public static void init() {
+        List<Resource> resourceList = Resource.findAll();
+        for (Resource resource : resourceList) {
+            List<String> crewNameList = loadCrewName(resource.getFilename());
+            for (String crewName : crewNameList) {
+                Crew crew = new Crew(resource.getCourse(), crewName);
+                crews.add(crew);
+            }
+        }
+    }
+
+    private static List<String> loadCrewName(String filename) {
+        List<String> crewNameList = new ArrayList<>();
+        String filePath = Objects.requireNonNull(CrewRepository.class.getClassLoader().getResource(filename)).getPath();
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                crewNameList.add(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return crewNameList;
+    }
+
+    private enum Resource {
+        BACKEND(Course.BACKEND, "backend-crew.md"), FRONTEND(Course.FRONTEND, "frontend-crew.md");
+
+        private final Course course;
+        private final String filename;
+
+        Resource(Course course, String filename) {
+            this.course = course;
+            this.filename = filename;
+        }
+
+        public Course getCourse() {
+            return course;
+        }
+
+        public String getFilename() {
+            return filename;
+        }
+
+        public static List<Resource> findAll() {
+            return Arrays.stream(Resource.values()).collect(Collectors.toList());
+        }
+    }
+}
+```
+
+리소스 파일을 참조해 크루명 목록 로드.
+
+로드된 크루명을 크루 목록에 저장.
+
+```java
+// Game.java
+
+package pairmatching.infrastructure;
+
+import pairmatching.controller.view.MenuViewController;
+import pairmatching.exception.IllegalArgumentServiceException;
+import pairmatching.repository.CrewRepository;
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public class Game {
+    public void run() {
+        this.init();
+        View menuView = menuViewController.make();
+        do {
+            try {
+                menuView.execute(inputHelper, outputHelper);
+            } catch (IllegalArgumentServiceException e) {
+                outputHelper.printError(e.getMessage());
+                outputHelper.printNextLine();
+            }
+        } while (!this.end);
+    }
+
+    private void init() {
+        CrewRepository.init();
+    }
+}
+```
+
+애플리케이션 실행시 크루 목록 초기화 시행.
