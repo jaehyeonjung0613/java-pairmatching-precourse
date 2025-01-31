@@ -2107,3 +2107,103 @@ public class Application {
 ```
 
 애플리케이션 실행 및 종료.
+
+## 15. 메뉴 화면 정의 및 종료 구현
+
+```java
+// ViewController.java
+
+package pairmatching.controller.view;
+
+import pairmatching.view.View;
+
+public interface ViewController {
+    View make();
+}
+```
+
+화면 생성 인터페이스 Controller 정의.
+
+```java
+// MenuViewController.java
+
+package pairmatching.controller.view;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+import pairmatching.view.component.MenuSelectFormView;
+import pairmatching.view.component.MenuSelectItem;
+import pairmatching.view.component.SelectHandler;
+
+public class MenuViewController implements ViewController {
+    private final InputHelper inputHelper;
+    private final OutputHelper outputHelper;
+    private final Runnable endHandler;
+
+    public MenuViewController(InputHelper inputHelper, OutputHelper outputHelper, Runnable endHandler) {
+        this.inputHelper = inputHelper;
+        this.outputHelper = outputHelper;
+        this.endHandler = endHandler;
+    }
+
+    @Override
+    public View make() {
+        return new MenuSelectFormView(SelectHandler.builder()
+            .addEventListener(MenuSelectItem.END, this.endHandler));
+    }
+}
+```
+
+메뉴 화면 정의.
+
+종료 이벤트 핸들러 등록.
+
+```java
+// Game.java
+
+package pairmatching.infrastructure;
+
+import pairmatching.controller.view.MenuViewController;
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+
+public class Game {
+    private static Game instance;
+
+    private final InputHelper inputHelper;
+    private final OutputHelper outputHelper;
+    private final MenuViewController menuViewController;
+
+    private boolean end = false;
+
+    private Game(InputHelper inputHelper, OutputHelper outputHelper) {
+        this.inputHelper = inputHelper;
+        this.outputHelper = outputHelper;
+        this.menuViewController = new MenuViewController(inputHelper, outputHelper, this::end);
+    }
+
+    public void run() {
+        View menuView = menuViewController.make();
+        do {
+            try {
+                menuView.execute(inputHelper, outputHelper);
+            } catch (IllegalArgumentException e) {
+                outputHelper.printError(e.getMessage());
+                outputHelper.printNextLine();
+            }
+        } while (!this.end);
+    }
+
+    private void end() {
+        this.end = true;
+    }
+}
+```
+
+애플리케이션 구동시 메뉴 화면 출력되도록 구현.
+
+종료 이벤트 발생시까지 메뉴 화면 출력.
+
+
