@@ -1911,7 +1911,7 @@ public class MenuSelectFormView extends SelectFormView {
 
 package pairmatching.view.component;
 
-public enum ReMatchingSelectItem implements SelectItem{
+public enum ReMatchingSelectItem implements SelectItem {
     YES("네", "네"),
     NO("아니오", "아니오");
 
@@ -2206,4 +2206,207 @@ public class Game {
 
 종료 이벤트 발생시까지 메뉴 화면 출력.
 
+## 16. 매칭 조회
 
+```java
+// Service.java
+
+package pairmatching.service;
+
+public interface Service {
+}
+```
+
+비즈니스 인터페이스 Service 정의.
+
+```java
+// MissionService.java
+
+package pairmatching.service;
+
+import java.util.List;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentServiceException;
+
+public class MissionService implements Service {
+
+    public List<Pair> select(Course course, Mission mission) {
+        return mission.getPairList(course).get();
+    }
+}
+```
+
+Pair 목록 반환 기능 생성.
+
+```java
+// Controller.java
+
+package pairmatching.controller;
+
+public interface Controller {
+}
+```
+
+비즈니스 인터페이스 Controller 정의.
+
+```java
+// MissionController.java
+
+package pairmatching.controller;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+import pairmatching.domain.Level;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.service.MissionService;
+
+public class MissionController implements Controller {
+    private final MissionService missionService = new MissionService();
+
+    public List<List<String>> select(String input) {
+        String[] commands = input.split(", ");
+        String courseName = commands[0];
+        String levelName = commands[1];
+        String missionName = commands[2];
+        Course course = this.getOneByCourse(courseName);
+        Level level = this.getOneByLevel(levelName);
+        Mission mission = this.getOneByMission(level, missionName);
+        List<Pair> pairList = this.missionService.select(course, mission);
+        List<List<String>> pairOfNameList = new ArrayList<>();
+        for (Pair pair : pairList) {
+            List<String> nameList = pair.getCrewList().stream().map(Crew::getName).collect(Collectors.toList());
+            pairOfNameList.add(nameList);
+        }
+        return pairOfNameList;
+    }
+
+    private Course getOneByCourse(String courseName) {
+        return Course.findByName(courseName).get();
+    }
+
+    private Level getOneByLevel(String levelName) {
+        return Level.findByName(levelName).get();
+    }
+
+    private Mission getOneByMission(Level level, String missionName) {
+        return Mission.findByLevelAndName(level, missionName).get();
+    }
+}
+```
+
+페어 내 크루명 목록 반환 기능 생성.
+
+```java
+// PairSelectionViewControllerConstants.java
+
+package pairmatching.controller.view;
+
+public final class PairSelectionViewControllerConstants {
+    private PairSelectionViewControllerConstants() {
+    }
+
+    public static final String PAIR_IN_CREW_SEPARATOR = " : ";
+}
+```
+
+페어 내 크루 구분자 표현 정의.
+
+```java
+// PairSelectionViewController.java
+
+package pairmatching.controller.view;
+
+import static pairmatching.controller.view.PairSelectionViewControllerConstants.*;
+
+import java.util.List;
+
+import pairmatching.controller.MissionController;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.CourseTextView;
+import pairmatching.view.MissionTextView;
+import pairmatching.view.View;
+import pairmatching.view.component.MissionInputFormView;
+import pairmatching.view.layout.RepeatView;
+import pairmatching.view.layout.SerializeView;
+import pairmatching.view.layout.SharpFrameView;
+
+public class PairSelectionViewController implements ViewController {
+    private final OutputHelper outputHelper;
+    // Controller
+    private final MissionController missionController = new MissionController();
+
+    public PairSelectionViewController(OutputHelper outputHelper) {
+        this.outputHelper = outputHelper;
+    }
+
+    @Override
+    public View make() {
+        return new SerializeView(new SharpFrameView(
+            new SerializeView(new CourseTextView(), new MissionTextView())),
+            new RepeatView(new MissionInputFormView(this::select)));
+    }
+
+    public void select(String command) {
+        List<List<String>> pairOfNameList = this.missionController.select(command);
+        this.outputHelper.println("페어 매칭 결과입니다.");
+        for (List<String> pairOfName : pairOfNameList) {
+            this.outputHelper.println(String.format(String.join(PAIR_IN_CREW_SEPARATOR, pairOfName)));
+        }
+        this.outputHelper.printNextLine();
+    }
+}
+
+```
+
+페어 조회 기능 구현.
+
+```java
+// MenuViewController.java
+
+package pairmatching.controller.view;
+
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+import pairmatching.view.component.MenuSelectFormView;
+import pairmatching.view.component.MenuSelectItem;
+import pairmatching.view.component.SelectHandler;
+
+public class MenuViewController implements ViewController {
+    private final InputHelper inputHelper;
+    private final OutputHelper outputHelper;
+    private final Runnable endHandler;
+    // ViewController
+    private final PairSelectionViewController pairSelectionViewController;
+
+    public MenuViewController(InputHelper inputHelper, OutputHelper outputHelper, Runnable endHandler) {
+        this.inputHelper = inputHelper;
+        this.outputHelper = outputHelper;
+        this.endHandler = endHandler;
+        // ViewController
+        pairSelectionViewController = new PairSelectionViewController(outputHelper);
+    }
+
+    @Override
+    public View make() {
+        return new MenuSelectFormView(SelectHandler.builder()
+            .addEventListener(MenuSelectItem.PAIR_SELECTION, this::openPairSelection)
+            .addEventListener(MenuSelectItem.END, this.endHandler));
+    }
+
+    public void openPairSelection() {
+        View pairSelectionView = pairSelectionViewController.make();
+        pairSelectionView.execute(inputHelper, outputHelper);
+    }
+}
+```
+
+페어 조회 이벤트 핸들러 등록.
