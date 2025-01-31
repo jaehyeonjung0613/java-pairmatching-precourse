@@ -1,6 +1,8 @@
 package pairmatching.infrastructure;
 
 import pairmatching.controller.view.MenuViewController;
+import pairmatching.exception.IllegalArgumentServiceException;
+import pairmatching.repository.CrewRepository;
 import pairmatching.ui.InputHelper;
 import pairmatching.ui.OutputHelper;
 import pairmatching.view.View;
@@ -28,15 +30,20 @@ public class Game {
     }
 
     public void run() {
+        this.init();
         View menuView = menuViewController.make();
         do {
             try {
                 menuView.execute(inputHelper, outputHelper);
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentServiceException e) {
                 outputHelper.printError(e.getMessage());
                 outputHelper.printNextLine();
             }
         } while (!this.end);
+    }
+
+    private void init() {
+        CrewRepository.init();
     }
 
     private void end() {
