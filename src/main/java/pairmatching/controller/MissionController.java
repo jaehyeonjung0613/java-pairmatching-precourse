@@ -17,6 +17,22 @@ import pairmatching.service.MissionService;
 public class MissionController implements Controller {
     private final MissionService missionService = new MissionService();
 
+    public boolean checkPairMatched(String input) {
+        Command command = new Command(input);
+        Course course = this.getOneByCourse(command.getCourseName());
+        Level level = this.getOneByLevel(command.getLevelName());
+        Mission mission = this.getOneByMission(level, command.getMissionName());
+        return mission.exists(course);
+    }
+
+    public void match(String input) {
+        Command command = new Command(input);
+        Course course = this.getOneByCourse(command.getCourseName());
+        Level level = this.getOneByLevel(command.getLevelName());
+        Mission mission = this.getOneByMission(level, command.getMissionName());
+        this.missionService.match(course, mission);
+    }
+
     public List<List<String>> select(String input) {
         Command command = new Command(input);
         Course course = this.getOneByCourse(command.getCourseName());

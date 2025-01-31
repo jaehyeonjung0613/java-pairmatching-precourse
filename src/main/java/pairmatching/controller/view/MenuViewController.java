@@ -12,6 +12,7 @@ public class MenuViewController implements ViewController {
     private final OutputHelper outputHelper;
     private final Runnable endHandler;
     // ViewController
+    private final PairMatchingViewController pairMatchingViewController;
     private final PairSelectionViewController pairSelectionViewController;
 
     public MenuViewController(InputHelper inputHelper, OutputHelper outputHelper, Runnable endHandler) {
@@ -19,14 +20,21 @@ public class MenuViewController implements ViewController {
         this.outputHelper = outputHelper;
         this.endHandler = endHandler;
         // ViewController
-        pairSelectionViewController = new PairSelectionViewController(outputHelper);
+        this.pairMatchingViewController = new PairMatchingViewController(inputHelper, outputHelper);
+        this.pairSelectionViewController = new PairSelectionViewController(outputHelper);
     }
 
     @Override
     public View make() {
         return new MenuSelectFormView(SelectHandler.builder()
+            .addEventListener(MenuSelectItem.PAIR_MATCHING, this::openPairMatching)
             .addEventListener(MenuSelectItem.PAIR_SELECTION, this::openPairSelection)
             .addEventListener(MenuSelectItem.END, this.endHandler));
+    }
+
+    public void openPairMatching() {
+        View pairMatchingView = pairMatchingViewController.make();
+        pairMatchingView.execute(this.inputHelper, this.outputHelper);
     }
 
     public void openPairSelection() {

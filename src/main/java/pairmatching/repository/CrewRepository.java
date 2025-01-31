@@ -46,6 +46,10 @@ public class CrewRepository implements Repository<Crew> {
         return Collections.unmodifiableList(crews);
     }
 
+    public List<Crew> findAllByCourse(Course course) {
+        return crews.stream().filter(crew -> crew.getCourse().equals(course)).collect(Collectors.toList());
+    }
+
     private enum Resource {
         BACKEND(Course.BACKEND, "backend-crew.md"), FRONTEND(Course.FRONTEND, "frontend-crew.md");
 
