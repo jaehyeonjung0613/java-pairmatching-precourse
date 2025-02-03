@@ -40,4 +40,11 @@ public class Crew {
             .filter(pair -> pair.getLevel().equals(level))
             .anyMatch(pair -> pair.contains(other));
     }
+
+    public int count(Level level) {
+        return this.pairList.stream()
+            .filter(pair -> pair.getLevel().equals(level))
+            .mapToInt(pair -> pair.size() - 1)
+            .sum();
+    }
 }

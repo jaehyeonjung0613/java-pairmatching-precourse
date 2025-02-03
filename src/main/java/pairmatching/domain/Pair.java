@@ -58,4 +58,8 @@ public class Pair {
         }
         this.crewList.clear();
     }
+
+    public int size() {
+        return this.crewList.size();
+    }
 }
