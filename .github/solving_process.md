@@ -3101,3 +3101,91 @@ public class MissionService implements Service {
 페어 매칭 전 경우의 수 를 확인하고 할 수 없으면 에러 메시지 출력.
 
 지정된 시도까지 매칭이 되지 않으면 에러 메시지 출력.
+
+## 22. 페어 초기화
+
+```java
+// MissionController.java
+
+package pairmatching.controller;
+
+import static pairmatching.controller.MissionControllerConstants.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+import pairmatching.domain.Level;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentViewException;
+import pairmatching.service.MissionService;
+
+public class MissionController implements Controller {
+    public void init() {
+        List<Course> courseList = Course.findAll();
+        List<Mission> missionList = Mission.findAll();
+        for(Mission mission : missionList) {
+            for(Course course : courseList) {
+                mission.remove(course);
+            }
+        }
+    }
+}
+```
+
+페어 초기화 기능 구현.
+
+```java
+// MenuViewController.java
+
+package pairmatching.controller.view;
+
+import pairmatching.controller.MissionController;
+import pairmatching.ui.InputHelper;
+import pairmatching.ui.OutputHelper;
+import pairmatching.view.View;
+import pairmatching.view.component.MenuSelectFormView;
+import pairmatching.view.component.MenuSelectItem;
+import pairmatching.view.component.SelectHandler;
+
+public class MenuViewController implements ViewController {
+    private final InputHelper inputHelper;
+    private final OutputHelper outputHelper;
+    private final Runnable endHandler;
+    // ViewController
+    private final PairMatchingViewController pairMatchingViewController;
+    private final PairSelectionViewController pairSelectionViewController;
+    // Controller
+    private final MissionController missionController;
+
+    public MenuViewController(InputHelper inputHelper, OutputHelper outputHelper, Runnable endHandler) {
+        this.inputHelper = inputHelper;
+        this.outputHelper = outputHelper;
+        this.endHandler = endHandler;
+        // ViewController
+        this.pairMatchingViewController = new PairMatchingViewController(inputHelper, outputHelper);
+        this.pairSelectionViewController = new PairSelectionViewController(outputHelper);
+        // Controller
+        this.missionController = new MissionController();
+    }
+
+    @Override
+    public View make() {
+        return new MenuSelectFormView(SelectHandler.builder()
+            .addEventListener(MenuSelectItem.PAIR_MATCHING, this::openPairMatching)
+            .addEventListener(MenuSelectItem.PAIR_SELECTION, this::openPairSelection)
+            .addEventListener(MenuSelectItem.PAIR_RESET, this::initPair)
+            .addEventListener(MenuSelectItem.END, this.endHandler));
+    }
+    public void initPair() {
+        this.missionController.init();
+        this.outputHelper.println("초기화 되었습니다.");
+        this.outputHelper.printNextLine();
+    }
+}
+```
+
+페어 초기화 이벤트 핸들러 등록.
