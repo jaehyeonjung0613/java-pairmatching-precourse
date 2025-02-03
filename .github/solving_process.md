@@ -2956,3 +2956,149 @@ public class MenuViewController implements ViewController {
 ```
 
 페어 매칭 이벤트 핸들러 등록.
+
+## 21. 페어 매칭 유효성 체크
+
+```java
+// MissionServiceConstants.java
+
+package pairmatching.service;
+
+public final class MissionServiceConstants {
+    private MissionServiceConstants() {
+    }
+
+    public static final int MAX_MATCHING_COUNT = 3;
+
+    public static final String NOT_EXISTS_MATCHING_HISTORY_MESSAGE = "매칭 이력이 없습니다.";
+    public static final String NOT_EXISTS_MATCHING_APPROACH_MESSAGE = "매칭할 수 있는 방법이 없습니다.";
+    public static final String NOT_MATCH_MAX_COUNT_MESSAGE = "지정된 횟수안에 매칭이 되지 않았습니다.";
+}
+```
+
+유효성 관련 상수 정의.
+
+```java
+// Pair.java
+
+package pairmatching.domain;
+
+import static pairmatching.domain.PairConstants.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import pairmatching.exception.IllegalArgumentServiceException;
+
+public class Pair {
+    public int size() {
+        return this.crewList.size();
+    }
+}
+```
+
+```java
+// Crew.java
+
+
+package pairmatching.domain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Crew {
+    public int count(Level level) {
+        return this.pairList.stream()
+            .filter(pair -> pair.getLevel().equals(level))
+            .mapToInt(pair -> pair.size() - 1)
+            .sum();
+    }
+}
+```
+
+```java
+// MissionService.java
+
+package pairmatching.service;
+
+import static pairmatching.service.MissionServiceConstants.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import camp.nextstep.edu.missionutils.Randoms;
+import pairmatching.Config;
+import pairmatching.domain.Course;
+import pairmatching.domain.Crew;
+import pairmatching.domain.Level;
+import pairmatching.domain.Mission;
+import pairmatching.domain.Pair;
+import pairmatching.exception.IllegalArgumentServiceException;
+import pairmatching.repository.CrewRepository;
+
+public class MissionService implements Service {
+    public void match(Course course, Mission mission) {
+        List<Crew> crewList = this.crewRepository.findAllByCourse(course);
+        if (!this.checkPossibleMatching(mission.getLevel(), crewList)) {
+            throw new IllegalArgumentServiceException(NOT_EXISTS_MATCHING_APPROACH_MESSAGE);
+        }
+        if (this.tryMatching(course, mission, crewList) > MAX_MATCHING_COUNT) {
+            throw new IllegalArgumentServiceException(NOT_MATCH_MAX_COUNT_MESSAGE);
+        }
+    }
+
+    private boolean checkPossibleMatching(Level level, List<Crew> crewList) {
+        int totalCount = crewList.size();
+        int totalGroupPerCount = this.getGroupPerCount(totalCount), totalLastGroupPerCount = this.getLastGroupPerCount(
+            totalCount);
+        int groupPerCount = 0, lastGroupPerCount = 0;
+        List<Integer> countOfPossibleMatchingList = this.getCountOfPossibleMatchingList(level, crewList);
+        for (int matchingCount : countOfPossibleMatchingList) {
+            if (lastGroupPerCount < totalLastGroupPerCount && matchingCount >= totalLastGroupPerCount) {
+                lastGroupPerCount++;
+                continue;
+            }
+            groupPerCount++;
+        }
+        return groupPerCount == totalGroupPerCount && lastGroupPerCount == totalLastGroupPerCount;
+    }
+
+    private List<Integer> getCountOfPossibleMatchingList(Level level, List<Crew> crewList) {
+        return crewList.stream()
+            .map(crew -> crewList.size() - crew.count(level))
+            .filter(count -> count >= Config.PAIR_PER_MIN_COUNT - 1)
+            .collect(Collectors.toList());
+    }
+
+    private int getGroupPerCount(int totalCount) {
+        return (totalCount / Config.PAIR_PER_MIN_COUNT - 1) * Config.PAIR_PER_MIN_COUNT;
+    }
+
+    private int getLastGroupPerCount(int totalCount) {
+        return Config.PAIR_PER_MIN_COUNT + totalCount % Config.PAIR_PER_MIN_COUNT;
+    }
+
+    private int tryMatching(Course course, Mission mission, List<Crew> crewList) {
+        int count = 1;
+        do {
+            try {
+                List<Crew> shuffledCrewList = this.shuffleCrewList(crewList);
+                mission.match(course, shuffledCrewList);
+                break;
+            } catch (IllegalArgumentServiceException ignored) {
+            }
+        } while (count++ < MAX_MATCHING_COUNT);
+        return count;
+    }
+
+    private List<Crew> shuffleCrewList(List<Crew> crewList) {
+        return Randoms.shuffle(crewList);
+    }
+}
+```
+
+페어 매칭 전 경우의 수 를 확인하고 할 수 없으면 에러 메시지 출력.
+
+지정된 시도까지 매칭이 되지 않으면 에러 메시지 출력.
