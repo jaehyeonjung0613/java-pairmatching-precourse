@@ -62,6 +62,16 @@ public class MissionController implements Controller {
             .orElseThrow(() -> new IllegalArgumentViewException(NOT_EXISTS_MISSION_INPUT_MESSAGE));
     }
 
+    public void init() {
+        List<Course> courseList = Course.findAll();
+        List<Mission> missionList = Mission.findAll();
+        for(Mission mission : missionList) {
+            for(Course course : courseList) {
+                mission.remove(course);
+            }
+        }
+    }
+
     private static class Command {
         private final String courseName;
         private final String levelName;

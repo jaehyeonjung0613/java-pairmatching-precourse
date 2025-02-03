@@ -1,5 +1,6 @@
 package pairmatching.controller.view;
 
+import pairmatching.controller.MissionController;
 import pairmatching.ui.InputHelper;
 import pairmatching.ui.OutputHelper;
 import pairmatching.view.View;
@@ -14,6 +15,8 @@ public class MenuViewController implements ViewController {
     // ViewController
     private final PairMatchingViewController pairMatchingViewController;
     private final PairSelectionViewController pairSelectionViewController;
+    // Controller
+    private final MissionController missionController;
 
     public MenuViewController(InputHelper inputHelper, OutputHelper outputHelper, Runnable endHandler) {
         this.inputHelper = inputHelper;
@@ -22,6 +25,8 @@ public class MenuViewController implements ViewController {
         // ViewController
         this.pairMatchingViewController = new PairMatchingViewController(inputHelper, outputHelper);
         this.pairSelectionViewController = new PairSelectionViewController(outputHelper);
+        // Controller
+        this.missionController = new MissionController();
     }
 
     @Override
@@ -29,6 +34,7 @@ public class MenuViewController implements ViewController {
         return new MenuSelectFormView(SelectHandler.builder()
             .addEventListener(MenuSelectItem.PAIR_MATCHING, this::openPairMatching)
             .addEventListener(MenuSelectItem.PAIR_SELECTION, this::openPairSelection)
+            .addEventListener(MenuSelectItem.PAIR_RESET, this::initPair)
             .addEventListener(MenuSelectItem.END, this.endHandler));
     }
 
@@ -40,5 +46,11 @@ public class MenuViewController implements ViewController {
     public void openPairSelection() {
         View pairSelectionView = pairSelectionViewController.make();
         pairSelectionView.execute(inputHelper, outputHelper);
+    }
+
+    public void initPair() {
+        this.missionController.init();
+        this.outputHelper.println("초기화 되었습니다.");
+        this.outputHelper.printNextLine();
     }
 }
