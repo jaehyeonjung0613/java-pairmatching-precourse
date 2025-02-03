@@ -87,7 +87,7 @@ public enum Mission {
     }
 
     private boolean isLastPair(int index, int length) {
-        return index + Config.PAIR_PER_MIN_COUNT >= length - 1;
+        return index + Config.PAIR_PER_MIN_COUNT * 2 - 1 >= length;
     }
 
     private void generate(Course course) {
