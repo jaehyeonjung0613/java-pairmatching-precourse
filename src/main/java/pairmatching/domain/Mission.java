@@ -77,7 +77,7 @@ public enum Mission {
         return pairList;
     }
 
-    private void remove(Course course) {
+    public void remove(Course course) {
         List<Pair> pairList = this.pairOfCourse.remove(course);
         if (pairList != null) {
             for (Pair pair : pairList) {
