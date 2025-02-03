@@ -2714,7 +2714,6 @@ public class CrewRepository implements Repository<Crew> {
 package pairmatching.infrastructure;
 
 import pairmatching.controller.view.MenuViewController;
-import pairmatching.exception.IllegalArgumentServiceException;
 import pairmatching.repository.CrewRepository;
 import pairmatching.ui.InputHelper;
 import pairmatching.ui.OutputHelper;
@@ -2727,7 +2726,7 @@ public class Game {
         do {
             try {
                 menuView.execute(inputHelper, outputHelper);
-            } catch (IllegalArgumentServiceException e) {
+            } catch (IllegalArgumentException e) {
                 outputHelper.printError(e.getMessage());
                 outputHelper.printNextLine();
             }
